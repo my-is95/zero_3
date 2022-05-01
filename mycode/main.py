@@ -100,7 +100,6 @@ class Variable:
                 for y in f.outputs:
                     y().grad = None # 参照カウントが0になり、微分のデータはメモリから消去される
 
-
 def as_array(x):
     if np.isscalar(x):
         return np.array(x)
@@ -145,6 +144,15 @@ class Add(Function):
     def backward(self, gy):
         return gy, gy
 
+class Mul(Function):
+    def forward(self, x0, x1):
+        y = x0 * x1
+        return y
+
+    def backward(self, gy):
+        x0, x1 = self.inputs[0].data, self.inputs[1].data
+        return gy * x1, gy * x0
+
 class Square(Function):
     def forward(self, x):
         return x ** 2
@@ -167,17 +175,20 @@ class Exp(Function):
 
 # 自分で作成した関数クラスをPython関数のように使用するために、関数でラップする
 def add(x0, x1):
-    f = Add()
-    return f(x0, x1)
+    return Add()(x0, x1)
+
+def mul(x0, x1):
+    return Mul()(x0, x1)
 
 def square(x):
-    f = Square()
-    return f(x)
+    return Square()(x)
 
 def exp(x):
-    f = Exp()
-    return f(x)
+    return Exp()(x)
 
+# 演算子* のオーバーロード
+Variable.__mul__ = mul
+Variable.__add__ = add
 
 # 中心差分近似によって、数値微分を求める
 def numerical_diff(f, x, eps=1e-4):
@@ -205,8 +216,16 @@ class SquareTest(unittest.TestCase):
 
 
 def main():
-    x = Variable(np.array([[1,2,3], [4,5,6]]))
-    print(x)
+    a = Variable(np.array(3.0))
+    b = Variable(np.array(2.0))
+    c = Variable(np.array(1.0))
+
+    y = a * b + c
+    y.backward()
+
+    print(y)
+    print(a.grad)
+    print(b.grad)
 
 
 if __name__ == "__main__":
