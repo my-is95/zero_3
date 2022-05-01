@@ -21,6 +21,8 @@ def no_grad():
 
 
 class Variable:
+    __array_priority__ = 200    # 演算子の優先度を高い値にしておくことで他のデータ型との演算時に、Variableの演算子による処理が優先される
+
     def __init__(self, data, name=None):
         # np.ndarray 以外の型の入力を受け付けないようにバリデーションする
         if data is not None:
@@ -105,6 +107,11 @@ def as_array(x):
         return np.array(x)
     return x
 
+def as_variable(obj):
+    if isinstance(obj, Variable):
+        return obj
+    return Variable(obj)
+
 
 class Function:
     """
@@ -113,7 +120,7 @@ class Function:
     （同様のアプローチがPyTorchやChainerで行われている）
     """
     def __call__(self, *inputs):
-        # 可変長の引数を扱えるように修正
+        inputs = [as_variable(x) for x in inputs]
         xs = [x.data for x in inputs]
         ys = self.forward(*xs)  # アスタリスクを付けてアンパッキング
         if not isinstance(ys, tuple):   # タプルではない場合の追加対応
@@ -138,6 +145,7 @@ class Function:
 
 class Add(Function):
     def forward(self, x0, x1):
+        x1 = as_array(x1)
         y = x0 + x1
         return y
 
@@ -146,6 +154,7 @@ class Add(Function):
 
 class Mul(Function):
     def forward(self, x0, x1):
+        x1 = as_array(x1)
         y = x0 * x1
         return y
 
@@ -188,7 +197,9 @@ def exp(x):
 
 # 演算子* のオーバーロード
 Variable.__mul__ = mul
+Variable.__rmul__ = mul # 可換のためadd関数の再利用が可能
 Variable.__add__ = add
+Variable.__radd__ = add # 可換のためadd関数の再利用が可能
 
 # 中心差分近似によって、数値微分を求める
 def numerical_diff(f, x, eps=1e-4):
@@ -216,16 +227,9 @@ class SquareTest(unittest.TestCase):
 
 
 def main():
-    a = Variable(np.array(3.0))
-    b = Variable(np.array(2.0))
-    c = Variable(np.array(1.0))
-
-    y = a * b + c
-    y.backward()
-
+    x = Variable(np.array([1.0]))
+    y = np.array([2.0]) + x
     print(y)
-    print(a.grad)
-    print(b.grad)
 
 
 if __name__ == "__main__":
