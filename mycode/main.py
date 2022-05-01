@@ -21,15 +21,43 @@ def no_grad():
 
 
 class Variable:
-    def __init__(self, data):
+    def __init__(self, data, name=None):
         # np.ndarray 以外の型の入力を受け付けないようにバリデーションする
         if data is not None:
             if not isinstance(data, np.ndarray):
                 raise TypeError('{} is not supported'.format(type(data)))
         self.data = data
+        self.name = name
         self.grad = None    # 逆伝播によって実際に計算された時に値を持つ
         self.creator = None
         self.generation = 0 # 逆伝播の順番を管理するために世代を管理
+
+    # @property を付けることにより、shapeメソッドをインスタンス変数として扱うことができる
+    @property
+    def shape(self):
+        return self.data.shape
+
+    @property
+    def ndim(self):
+        return self.data.ndim
+
+    @property
+    def size(self):
+        return self.data.size
+    
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    # __len__ 特殊メソッドを実装すれば、Variableインスタンスに対してlen関数を使用可能になる
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        if self.data is None:
+            return 'Variable(None)'
+        p = str(self.data).replace('\n', '\n' + ' '*9)
+        return 'Variable(' + p + ')'
 
     def set_creator(self, func):
         self.creator = func
@@ -177,10 +205,8 @@ class SquareTest(unittest.TestCase):
 
 
 def main():
-    with no_grad():
-        x = Variable(np.array(2.0))
-        y = square(x)
-    print(y.data)
+    x = Variable(np.array([[1,2,3], [4,5,6]]))
+    print(x)
 
 
 if __name__ == "__main__":
