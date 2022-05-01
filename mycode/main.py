@@ -1,4 +1,5 @@
 import numpy as np
+import weakref
 import unittest
 
 
@@ -11,9 +12,11 @@ class Variable:
         self.data = data
         self.grad = None    # 逆伝播によって実際に計算された時に値を持つ
         self.creator = None
+        self.generation = 0 # 逆伝播の順番を管理するために世代を管理
 
     def set_creator(self, func):
         self.creator = func
+        self.generation = func.generation + 1
 
     def cleargrad(self):
         self.grad = None
@@ -22,12 +25,21 @@ class Variable:
         if self.grad is None:
             self.grad = np.ones_like(self.data)
 
-        # 処理方式を再帰→ループに変更
-        funcs = [self.creator]
+        funcs = []
+        seen_set = set()
+        # 役割1: 既にfuncsリストに追加済みの関数を追加しない、役割2: 関数が追加される毎に世代順にリストを並び替え
+        def add_func(f):
+            if f not in seen_set:
+                funcs.append(f)
+                seen_set.add(f)
+                funcs.sort(key=lambda x: x.generation)
+
+        add_func(self.creator)
+
         while funcs:
             f = funcs.pop() # リストの末尾から関数を取得（リストの末尾は削除）
             # 関数の入出力を複数に対応できるように修正
-            gys = [output.grad for output in f.outputs]
+            gys = [output().grad for output in f.outputs]
             gxs = f.backward(*gys)
             if not isinstance(gxs, tuple):
                 gxs = (gxs,)
@@ -37,7 +49,7 @@ class Variable:
                 else:   # 既に入力の微分に値が代入されている場合
                     x.grad = x.grad + gx
                 if x.creator is not None:
-                    funcs.append(x.creator)
+                    add_func(x.creator)
 
 
 def as_array(x):
@@ -59,10 +71,12 @@ class Function:
         if not isinstance(ys, tuple):   # タプルではない場合の追加対応
             ys = (ys,)
         outputs = [Variable(as_array(y)) for y in ys]
+        # 逆伝播を正常な順番で行うために世代管理
+        self.generation = max([x.generation for x in inputs])
         for output in outputs:
             output.set_creator(self)
         self.inputs = inputs
-        self.outputs = outputs
+        self.outputs = [weakref.ref(output) for output in outputs]
         # 関数の戻り値が1つの場合は、その1つの変数を直接返すようにしている
         return outputs if len(outputs) > 1 else outputs[0]
 
@@ -141,9 +155,12 @@ class SquareTest(unittest.TestCase):
 
 
 def main():
-    x = Variable(np.array(3.0))
-    y = add(x, x)
+    x = Variable(np.array(2.0))
+    a = square(x)
+    y = add(square(a), square(a))
     y.backward()
+
+    print(y.data)
     print(x.grad)
 
 
