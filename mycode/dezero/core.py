@@ -281,7 +281,7 @@ def pow(x, c):
 
 # 演算子のオーバーロードを定義するための関数
 def setup_variable():
-    # 演算子* のオーバーロード
+    # 演算子 のオーバーロード
     Variable.__mul__ = mul
     Variable.__rmul__ = mul # 可換のためadd関数の再利用が可能
     Variable.__add__ = add
@@ -289,6 +289,8 @@ def setup_variable():
     Variable.__neg__ = neg
     Variable.__sub__ = sub
     Variable.__rsub__ = rsub
-    Variable.__div__ = div
-    Variable.__rdiv__ = rdiv
+    # Variable.__div__ = div
+    # Variable.__rdiv__ = rdiv
+    Variable.__truediv__ = div
+    Variable.__rtruediv__ = rdiv
     Variable.__pow__ = pow
