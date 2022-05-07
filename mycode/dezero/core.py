@@ -121,6 +121,10 @@ class Variable:
         return dezero.functions.sum(self, axis, keepdims)
 
 
+class Parameter(Variable):
+    pass
+
+
 def as_array(x):
     if np.isscalar(x):
         return np.array(x)
