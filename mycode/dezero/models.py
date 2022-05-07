@@ -1,5 +1,7 @@
 from dezero import Layer
 from dezero import utils
+import dezero.functions as F
+import dezero.layers as L
 
 class Model(Layer):
     def plot(self, *inputs, to_file='model.png'):
