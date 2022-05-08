@@ -1,9 +1,7 @@
 from tkinter import Y
 import numpy as np
 from dezero import utils
-from dezero import Function
-from dezero import as_variable
-from dezero import as_array
+from dezero.core import Function, Variable, as_variable, as_array
 
 class Sin(Function):
     def forward(self, x):

@@ -26,5 +26,12 @@ else:
     from dezero.layers import Layer
     from dezero.models import Model
 
+    import dezero.datasets
+    import dezero.optimizers
+    import dezero.functions
+    import dezero.layers
+    import dezero.utils
+    import dezero.transforms
+
 # Variableインスタンスの演算子のオーバーロードを行う関数を実行
 setup_variable()
