@@ -181,3 +181,7 @@ def show_progress(block_num, block_size, total_size):
     if i >= 30: i = 30
     bar = "#" * i + "." * (30 - i)
     print(bar_template.format(bar, p), end='')
+
+
+def get_conv_outsize(input_size, kernel_size, stride, pad):
+    return (input_size + pad*2 - kernel_size) // stride + 1
